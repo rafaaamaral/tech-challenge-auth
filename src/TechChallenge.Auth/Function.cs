@@ -145,20 +145,24 @@ public class Function
 
     public APIGatewayHttpApiV2ProxyResponse FunctionHandler(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
     {
+        Console.WriteLine($"[INICIO] RequestId: {context?.AwsRequestId}");
+
         // No HTTP API v2, o path vem em RawPath e o método vem dentro de RequestContext.Http
         var path = request.RawPath ?? request.RequestContext?.Http?.Path;
         var method = request.RequestContext?.Http?.Method;
 
-        Console.WriteLine($"Rota recebida: {path} | Método: {method}");
-        Console.WriteLine($"Body recebido: {request.Body}");
+        Console.WriteLine($"[REQUISICAO] Rota recebida: {path} | Método: {method}");
+        Console.WriteLine($"[REQUISICAO] Body recebido: {request.Body}");
 
         if (method != "POST" || string.IsNullOrEmpty(path) || !path.EndsWith("/auth/cpf"))
         {
+            Console.WriteLine("[AVISO] Rota ou método inválido para autenticação por CPF. Retornando 404.");
             return new APIGatewayHttpApiV2ProxyResponse { StatusCode = 404 };
         }
 
         if (string.IsNullOrWhiteSpace(request.Body))
         {
+            Console.WriteLine("[AVISO] Body da requisição não informado. Retornando 400.");
             return new APIGatewayHttpApiV2ProxyResponse
             {
                 StatusCode = 400,
@@ -175,9 +179,11 @@ public class Function
         try
         {
             authRequest = JsonSerializer.Deserialize<AuthRequest>(request.Body);
+            Console.WriteLine("[INFO] Body desserializado com sucesso.");
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            Console.WriteLine($"[ERRO] JSON inválido: {ex.Message}");
             return new APIGatewayHttpApiV2ProxyResponse
             {
                 StatusCode = 400,
@@ -195,6 +201,7 @@ public class Function
 
         if (authRequest == null || string.IsNullOrWhiteSpace(authRequest.Cpf) || !CPFValidator.IsValid(authRequest.Cpf))
         {
+            Console.WriteLine("[AVISO] CPF inválido recebido. Retornando 400.");
             return new APIGatewayHttpApiV2ProxyResponse
             {
                 StatusCode = 400,
@@ -204,9 +211,11 @@ public class Function
         }
 
         var cpf = authRequest.Cpf.Trim();
+        Console.WriteLine($"[INFO] CPF validado. Documento normalizado: {cpf}");
 
         if (_usuarioService == null)
         {
+            Console.WriteLine("[ERRO] Serviço de usuário não inicializado. Verifique configuração de banco/secret. Retornando 500.");
             return new APIGatewayHttpApiV2ProxyResponse
             {
                 StatusCode = 500,
@@ -219,10 +228,13 @@ public class Function
 
         try
         {
+            Console.WriteLine($"[INFO] Buscando usuário por documento: {cpf}");
             usuario = _usuarioService.ObterPorDocumentoAsync(cpf).GetAwaiter().GetResult();
+            Console.WriteLine($"[INFO] Usuário encontrado: {usuario.Login} | Ativo: {usuario.Ativo}");
         }
         catch (NotFoundException)
         {
+            Console.WriteLine("[AVISO] Usuário não encontrado para o documento informado. Retornando 403.");
             return new APIGatewayHttpApiV2ProxyResponse
             {
                 StatusCode = 403,
@@ -230,9 +242,20 @@ public class Function
                 Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
             };
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERRO] Falha ao consultar usuário no banco: {ex.Message}");
+            return new APIGatewayHttpApiV2ProxyResponse
+            {
+                StatusCode = 500,
+                Body = JsonSerializer.Serialize(new AuthResponse { Success = false, Message = "Erro interno ao consultar usuário." }),
+                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+            };
+        }
 
         if (!usuario.Ativo)
         {
+            Console.WriteLine("[AVISO] Usuário encontrado, porém inativo. Retornando 403.");
             return new APIGatewayHttpApiV2ProxyResponse
             {
                 StatusCode = 403,
@@ -242,9 +265,11 @@ public class Function
         }
 
         var jwtToken = _tokenService.GerarToken(usuario);
+        Console.WriteLine("[INFO] Token JWT gerado com sucesso.");
 
         var responseBody = JsonSerializer.Serialize(new { token = jwtToken });
-        Console.WriteLine($"Gerando resposta: {responseBody}");
+        Console.WriteLine($"[SUCESSO] Gerando resposta: {responseBody}");
+        Console.WriteLine($"[FIM] RequestId: {context?.AwsRequestId}");
 
         return new APIGatewayHttpApiV2ProxyResponse
         {
