@@ -10,7 +10,7 @@ permissions:
 
 env:
   DOTNET_VERSION: "10.0.x"
-  AWS_REGION: "us-east-01"
+  AWS_REGION: "us-east-1"
   AWS_LAMBDA_FUNCTION_NAME: "TechChallengeAuth"
   AWS_LAMBDA_RUNTIME: "dotnet8"
   AWS_LAMBDA_HANDLER: "TechChallenge.Auth::TechChallenge.Auth.Function::FunctionHandler"
