@@ -1,0 +1,84 @@
+name: Deploy AWS Lambda C# (.NET)
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  AWS_REGION: "us-east-01"
+  AWS_LAMBDA_FUNCTION_NAME: "TechChallengeAuth"
+  AWS_LAMBDA_RUNTIME: "dotnet8"
+  AWS_LAMBDA_HANDLER: "TechChallenge.Auth::TechChallenge.Auth.Function::FunctionHandler"
+  AWS_LAMBDA_MEMORY_SIZE: "512"
+
+jobs:
+  deploy-lambda:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/TechChallenge.Auth/TechChallenge.Auth.csproj
+
+      - name: Run tests
+        run: dotnet test src/TechChallenge.Auth.Tests/TechChallenge.Auth.Tests.csproj --no-restore
+
+      - name: Publish Lambda project
+        run: dotnet publish src/TechChallenge.Auth/TechChallenge.Auth.csproj -c Release -o ./publish
+
+      - name: Create Lambda zip package
+        run: |
+          cd publish
+          zip -r ../lambda-package.zip .
+
+      - name: Validate AWS credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          aws sts get-caller-identity --region "$AWS_REGION"
+
+      - name: Configure Lambda runtime, handler and memory
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_LAMBDA_FUNCTION_NAME: ${{ env.AWS_LAMBDA_FUNCTION_NAME }}
+          AWS_LAMBDA_RUNTIME: ${{ env.AWS_LAMBDA_RUNTIME }}
+          AWS_LAMBDA_HANDLER: ${{ env.AWS_LAMBDA_HANDLER }}
+          AWS_LAMBDA_MEMORY_SIZE: ${{ env.AWS_LAMBDA_MEMORY_SIZE }}
+        run: |
+          aws lambda update-function-configuration \
+            --region "$AWS_REGION" \
+            --function-name "$AWS_LAMBDA_FUNCTION_NAME" \
+            --runtime "$AWS_LAMBDA_RUNTIME" \
+            --handler "$AWS_LAMBDA_HANDLER" \
+            --memory-size "$AWS_LAMBDA_MEMORY_SIZE"
+
+      - name: Update AWS Lambda function code
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_LAMBDA_FUNCTION_NAME: ${{ env.AWS_LAMBDA_FUNCTION_NAME }}
+        run: |
+          aws lambda update-function-code \
+            --region "$AWS_REGION" \
+            --function-name "$AWS_LAMBDA_FUNCTION_NAME" \
+            --zip-file "fileb://lambda-package.zip"
