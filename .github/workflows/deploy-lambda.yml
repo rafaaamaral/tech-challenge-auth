@@ -36,7 +36,7 @@ jobs:
         run: dotnet test src/TechChallenge.Auth.Tests/TechChallenge.Auth.Tests.csproj --no-restore
 
       - name: Publish Lambda project
-        run: dotnet publish src/TechChallenge.Auth/TechChallenge.Auth.csproj -c Release -o ./publish
+        run: dotnet publish src/TechChallenge.Auth/TechChallenge.Auth.csproj -c Release -o ./publish /p:PublishReadyToRun=false
 
       - name: Create Lambda zip package
         run: |
