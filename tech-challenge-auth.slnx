@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/TechChallenge.Auth.Application/TechChallenge.Auth.Application.csproj" Id="c8b73b62-fb80-4507-8b52-b153936d2aac" />
+    <Project Path="src/TechChallenge.Auth.Domain/TechChallenge.Auth.Domain.csproj" Id="de289f05-abc4-41f4-8175-56e23bfb01e8" />
+    <Project Path="src/TechChallenge.Auth.Infrastructure/TechChallenge.Auth.Infrastructure.csproj" Id="85db1ade-0c37-4047-bb23-a42e3c2eb78e" />
     <Project Path="src/TechChallenge.Auth.Tests/TechChallenge.Auth.Tests.csproj" />
     <Project Path="src/TechChallenge.Auth/TechChallenge.Auth.csproj" />
   </Folder>
