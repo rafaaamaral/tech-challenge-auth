@@ -1,0 +1,37 @@
+{
+  "info": {
+    "name": "TechChallenge.Auth",
+    "description": "Collection mínima para testar o endpoint de autenticação por CPF.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "POST /auth/cpf",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cpf\": \"12345678909\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/cpf",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "cpf"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://<api-gateway-id>.execute-api.<region>.amazonaws.com"
+    }
+  ]
+}
