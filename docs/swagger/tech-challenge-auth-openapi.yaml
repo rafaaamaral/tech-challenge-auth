@@ -1,0 +1,44 @@
+openapi: 3.0.1
+info:
+  title: TechChallenge.Auth API
+  description: API responsável por autenticar um usuário por CPF e emitir um JWT.
+  version: 1.0.0
+servers:
+  - url: https://<api-gateway-id>.execute-api.<region>.amazonaws.com
+paths:
+  /auth/cpf:
+    post:
+      summary: Autentica um usuário por CPF
+      operationId: authCpf
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpf
+              properties:
+                cpf:
+                  type: string
+                  example: "12345678909"
+      responses:
+        "200":
+          description: Autenticação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  token:
+                    type: string
+        "400":
+          description: Requisição inválida
+        "403":
+          description: Usuário não encontrado ou inativo
+        "500":
+          description: Erro interno
